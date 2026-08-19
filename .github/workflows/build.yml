@@ -1,0 +1,47 @@
+name: Build OpenIPC SSC377D IMX335 + wfb-ng
+
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - '.github/workflows/build.yml'
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          repository: OpenIPC/buildroot
+          token: ${{ secrets.GITHUB_TOKEN }}
+          submodules: recursive
+
+      - name: Pull builder image
+        run: docker pull openipc/buildroot:latest
+
+      - name: Build firmware
+        run: |
+          docker run --rm -v $(pwd):/build openipc/buildroot:latest bash -c "
+            make clean
+            make openipc_ssc377d_imx335_defconfig
+            cat >> .config <<'EOF'
+CONFIG_PACKAGE_wfb-ng=y
+CONFIG_PACKAGE_wfb-ng-tools=y
+CONFIG_PACKAGE_kmod-rtl8812au-ct=y
+CONFIG_PACKAGE_kmod-8812bu=y
+CONFIG_PACKAGE_kmod-mt76x2u=y
+CONFIG_PACKAGE_openipc-telemetry=y
+CONFIG_PACKAGE_mavlink-router=y
+CONFIG_PACKAGE_osd=y
+EOF
+            make olddefconfig
+            make -j$(nproc)
+          "
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: openipc-ssc377d-wfbng
+          path: output/images/*.sysupgrade.bin
+          retention-days: 7

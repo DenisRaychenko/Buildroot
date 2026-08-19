@@ -14,7 +14,7 @@ jobs:
       - uses: actions/checkout@v4
         with:
           repository: OpenIPC/buildroot
-          token: ${{ secrets.GITHUB_TOKEN }}
+          token: *** secrets.GITHUB_TOKEN }}
           submodules: recursive
 
       - name: Pull builder image
@@ -28,9 +28,12 @@ jobs:
             cat >> .config <<'EOF'
 CONFIG_PACKAGE_wfb-ng=y
 CONFIG_PACKAGE_wfb-ng-tools=y
-CONFIG_PACKAGE_kmod-rtl8812au-ct=y
-CONFIG_PACKAGE_kmod-8812bu=y
-CONFIG_PACKAGE_kmod-mt76x2u=y
+# Wi-Fi драйвери (покриваємо всі варіанти)
+CONFIG_PACKAGE_kmod-rtl8812eu-ct=y   # ТВІЙ BL-M8812EU2 (USB 2.0)
+CONFIG_PACKAGE_kmod-rtl8812au-ct=y   # RTL8812AU (USB 3.0)
+CONFIG_PACKAGE_kmod-8812bu=y         # RTL8812BU (вбудований)
+CONFIG_PACKAGE_kmod-mt76x2u=y        # MediaTek MT76x2U
+# Корисні для дрону
 CONFIG_PACKAGE_openipc-telemetry=y
 CONFIG_PACKAGE_mavlink-router=y
 CONFIG_PACKAGE_osd=y

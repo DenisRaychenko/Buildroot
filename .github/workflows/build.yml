@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     timeout-minutes: 120
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout OpenIPC buildroot
+        uses: actions/checkout@v4
         with:
           repository: OpenIPC/buildroot
           token: *** secrets.GITHUB_TOKEN }}
@@ -20,24 +21,26 @@ jobs:
       - name: Pull builder image
         run: docker pull openipc/buildroot:latest
 
+      - name: Prepare package config
+        run: |
+          cat > /tmp/extra_packages.config << 'EOF'
+CONFIG_PACKAGE_wfb-ng=y
+CONFIG_PACKAGE_wfb-ng-tools=y
+CONFIG_PACKAGE_kmod-rtl8812eu-ct=y
+CONFIG_PACKAGE_kmod-rtl8812au-ct=y
+CONFIG_PACKAGE_kmod-8812bu=y
+CONFIG_PACKAGE_kmod-mt76x2u=y
+CONFIG_PACKAGE_openipc-telemetry=y
+CONFIG_PACKAGE_mavlink-router=y
+CONFIG_PACKAGE_osd=y
+EOF
+
       - name: Build firmware
         run: |
           docker run --rm -v $(pwd):/build openipc/buildroot:latest bash -c "
             make clean
             make openipc_ssc377d_imx335_defconfig
-            cat >> .config <<'EOF'
-CONFIG_PACKAGE_wfb-ng=y
-CONFIG_PACKAGE_wfb-ng-tools=y
-# Wi-Fi драйвери (покриваємо всі варіанти)
-CONFIG_PACKAGE_kmod-rtl8812eu-ct=y   # ТВІЙ BL-M8812EU2 (USB 2.0)
-CONFIG_PACKAGE_kmod-rtl8812au-ct=y   # RTL8812AU (USB 3.0)
-CONFIG_PACKAGE_kmod-8812bu=y         # RTL8812BU (вбудований)
-CONFIG_PACKAGE_kmod-mt76x2u=y        # MediaTek MT76x2U
-# Корисні для дрону
-CONFIG_PACKAGE_openipc-telemetry=y
-CONFIG_PACKAGE_mavlink-router=y
-CONFIG_PACKAGE_osd=y
-EOF
+            cat /tmp/extra_packages.config >> .config
             make olddefconfig
             make -j$(nproc)
           "
